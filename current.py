@@ -2,7 +2,7 @@ import os
 import urllib.request
 from datetime import datetime, time, timedelta
 
-import icm
+import icmparser.icm as icm
 
 def get_cached_url(url, filename, min_length = 1000):
     if not os.path.exists(filename):
@@ -20,9 +20,10 @@ def get_cached_url(url, filename, min_length = 1000):
 
 
 class CurrentMeteogram(object):
-    def __init__(self, row, col):
+    def __init__(self, row, col, cache_dir='.'):
         self.row = row
         self.col = col
+        self.cache_dir = cache_dir
 
         self.filename, self.fdate = self._fetch_file()
         self.meteogram = icm.Meteogram(self.filename, self.fdate)
@@ -41,5 +42,9 @@ class CurrentMeteogram(object):
         for fdate in self._genfdates(datetime.utcnow()):
             url = 'http://www.meteo.pl/um/metco/mgram_pict.php?ntype=0u&fdate={}&row={}&col={}&lang=pl'.format(icm.Meteogram.build_fdate(fdate), self.row, self.col)
             filename = '{}.{}.{}.png'.format(icm.Meteogram.build_fdate(fdate), self.row, self.col)
-            if get_cached_url(url, filename):
-                return filename, icm.Meteogram.build_fdate(fdate)
+            filepath = os.path.join(self.cache_dir, filename)
+            if get_cached_url(url, filepath):
+                return filepath, icm.Meteogram.build_fdate(fdate)
+
+    def __getattr__(self, item):
+        return getattr(self.meteogram, item)

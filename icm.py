@@ -1,10 +1,11 @@
+import os
 from datetime import datetime
 
-import charts
-import image
-import interpolators
-import ocr
-import postprocessors
+import icmparser.charts as charts
+import icmparser.image as image
+import icmparser.interpolators as interpolators
+import icmparser.ocr as ocr
+import icmparser.postprocessors as postprocessors
 
 class MeteogramFormat(object):
     @classmethod
@@ -49,7 +50,7 @@ class Meteogram(object):
         if format is None:
             format = MeteogramFormat.detect(self.img)
         self.format = format
-        self.ocr8 = ocr.OCR('fonts/scale.png')
+        self.ocr8 = ocr.OCR(os.path.join(os.path.dirname(__file__), 'fonts/scale.png'))
 
         self._parse_temperature()
 

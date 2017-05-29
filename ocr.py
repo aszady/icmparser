@@ -1,6 +1,6 @@
 import operator
 
-import image
+import icmparser.image as image
 
 
 class OCR(object):

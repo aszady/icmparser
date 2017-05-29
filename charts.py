@@ -1,4 +1,4 @@
-import postprocessors
+import icmparser.postprocessors as postprocessors
 
 
 class Detector(object):
