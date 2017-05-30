@@ -3,6 +3,8 @@ import urllib.request
 from datetime import datetime, time, timedelta
 
 import icmparser.icm as icm
+from icmparser import coords
+
 
 def get_cached_url(url, filename, min_length = 1000):
     if not os.path.exists(filename):
@@ -20,9 +22,9 @@ def get_cached_url(url, filename, min_length = 1000):
 
 
 class CurrentMeteogram(object):
-    def __init__(self, row, col, cache_dir='.'):
-        self.row = row
-        self.col = col
+    def __init__(self, lat, lon, cache_dir='.'):
+        self.row, self.col = coords.latlon2rowcol(lat, lon)
+        self.lat, self.lon = coords.rowcol2latlon(self.row, self.col)
         self.cache_dir = cache_dir
 
         self.filename, self.fdate = self._fetch_file()

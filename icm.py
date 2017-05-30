@@ -47,6 +47,7 @@ class Meteogram(object):
     def __init__(self, image_path, fdate, format = None):
         self.img = image.Image(image_path)
         self.date = datetime.strptime(fdate, self.FDATE_FORMAT)
+        self.lat, self.lon = None, None
         if format is None:
             format = MeteogramFormat.detect(self.img)
         self.format = format
