@@ -19,26 +19,60 @@ class MeteogramFormat(object):
                 return format()
         return None
 
+    def _chart(self, y):
+        return self.CHART_X[0], y[0], self.CHART_X[1], y[1]
 
-class ShortFormat(MeteogramFormat):
-    IMG_WIDTH = 540
+    def _scale(self, y):
+        return self.SCALE_X[0], y[0], self.SCALE_X[1], y[1]
+
+    def _clip(self, y):
+        return self._chart(y), self._scale(y)
+
+    def temperature_clip(self):
+        return self._clip(self.TEMPERATURE_Y)
+
+    def wind_clip(self):
+        return self._clip(self.WIND_Y)
+
+
+class StandardHeightFormat(MeteogramFormat):
     IMG_HEIGHT = 660
 
-    TEMPERATURE_CLIP = (62, 56, 477, 135)
-    TEMPERATURE_SCALE = (40, 56, 56, 135)
+    TEMPERATURE_Y = 56, 135
+    WIND_Y = 316, 395
+
+
+class ShortFormat(StandardHeightFormat):
+    IMG_WIDTH = 540
+
+    CHART_X = 62, 477
+    SCALE_X = 40, 56
+
     DAY_WIDTH = 168
     WARMUP_PIXELS = 7
 
 
-class LongFormat(MeteogramFormat):
+class LongFormat(StandardHeightFormat):
     IMG_WIDTH = 630
-    IMG_HEIGHT = 660
 
-    TEMPERATURE_CLIP = (68, 56, 561, 135)
-    TEMPERATURE_SCALE = (47, 56, 63, 135)
+    CHART_X = 68, 561
+    SCALE_X = 47, 63
+
     DAY_WIDTH = 154
     WARMUP_PIXELS = 6
 
+
+class StandardInterpreter(object):
+    def __init__(self, img_chart, img_scale, scale_ocr, line_color):
+        detected = charts.CurvyLine(line_color)(img_chart)
+        selected = postprocessors.Selector()(detected)
+        self.values = interpolators.LinearInterpolator(selected)
+
+        detected = charts.VerticalScale(scale_ocr)(img_scale, img_chart)
+        self.scale = interpolators.LinearInterpolator(detected)
+
+    def __call__(self, x):
+        return self.scale(self.values(x))
 
 class Meteogram(object):
     # eg. `2017052606`
@@ -54,20 +88,31 @@ class Meteogram(object):
         self.ocr8 = ocr.OCR(os.path.join(os.path.dirname(__file__), 'fonts/scale.png'))
 
         self._parse_temperature()
+        self._parse_wind()
 
     @classmethod
     def build_fdate(cls, dt):
         return dt.strftime(cls.FDATE_FORMAT)
 
-    def _parse_temperature(self):
-        temperature = self.img.clip(*self.format.TEMPERATURE_CLIP)
-        detected = charts.CurvyLine(temperature, (255, 0, 0))()
-        selected = postprocessors.Selector()(detected)
-        self.temperature = interpolators.LinearInterpolator(selected)
+    def _build_standard_interpreter(self, clip, color):
+        return StandardInterpreter(
+            self.img.clip(*clip[0]),
+            self.img.clip(*clip[1]),
+            self.ocr8,
+            color
+        )
 
-        temperature_scale = self.img.clip(*self.format.TEMPERATURE_SCALE)
-        detected = charts.VerticalScale(self.ocr8)(temperature_scale, temperature)
-        self.temperature_scale = interpolators.LinearInterpolator(detected)
+    def _parse_temperature(self):
+        self.temperature = self._build_standard_interpreter(
+            self.format.temperature_clip(),
+            (255, 0, 0)
+        )
+
+    def _parse_wind(self):
+        self.wind = self._build_standard_interpreter(
+            self.format.wind_clip(),
+            (17, 17, 153)
+        )
 
     def _time_to_x(self, time):
         delta = time - self.date
@@ -75,4 +120,7 @@ class Meteogram(object):
         return pixdelta
 
     def get_temperature(self, time):
-        return self.temperature_scale(self.temperature(self._time_to_x(time)))
+        return self.temperature(self._time_to_x(time))
+
+    def get_wind(self, time):
+        return self.wind(self._time_to_x(time))

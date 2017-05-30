@@ -6,16 +6,15 @@ class Detector(object):
 
 
 class CurvyLine(Detector):
-    def __init__(self, img, color):
-        self.img = img
+    def __init__(self, color):
         self.color = color
 
-    def __call__(self):
+    def __call__(self, img):
         data = {}
-        for x in range(self.img.width):
+        for x in range(img.width):
             col = []
-            for y in range(self.img.height):
-                if self.img(x, y) == self.color:
+            for y in range(img.height):
+                if img(x, y) == self.color:
                     col.append(y)
             data[x] = col
         return data
