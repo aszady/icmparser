@@ -7,6 +7,7 @@ from icmparser import coords
 
 
 def get_cached_url(url, filename, min_length = 1000):
+    print(url)
     if not os.path.exists(filename):
         try:
             f = urllib.request.urlopen(url)
@@ -22,6 +23,7 @@ def get_cached_url(url, filename, min_length = 1000):
 
 
 class CurrentMeteogram(object):
+
     def __init__(self, lat, lon, cache_dir='.'):
         self.row, self.col = coords.latlon2rowcol(lat, lon)
         self.lat, self.lon = coords.rowcol2latlon(self.row, self.col)
